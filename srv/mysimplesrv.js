@@ -9,7 +9,7 @@ const { Students } = cds.entities("myCompany.hr.lms");
  */
 
 const mysrvdemo = (srv) => {
-    srv.on("READ", "GetStudent", (req, res) => {
+    srv.on("READ", "StudentsSRV", (req, res) => {
       console.log("GET");
   
       // const { SELECT } = cds.ql(req);
@@ -23,6 +23,17 @@ const mysrvdemo = (srv) => {
       //   return await SELECT.from(Students).where(aFilter);
       // return await SELECT.from(Students);
     });
+
+    srv.on("CREATE", "UpdateStudent", async (req, res) => {
+        let firstName = req.data.first_name;
+        let lastName = req.data.last_name;
+        console.log("Update Method");
+        return {
+          email: "sample",
+          first_name: firstName,
+          last_name: lastName,
+        };
+      });
 }
 
 
