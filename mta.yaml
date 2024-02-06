@@ -1,50 +1,136 @@
-_schema-version: '3.1'
+_schema-version: "3.1"
 ID: DungNguyen
+description: A simple CAP project.
 version: 1.0.0
-description: "A simple CAP project."
+modules:
+- name: DungNguyen-srv
+  type: nodejs
+  path: gen/srv
+  requires:
+  - name: DungNguyen-auth
+  - name: DungNguyen-db
+  provides:
+  - name: srv-api
+    properties:
+      srv-url: ${default-url}
+  parameters:
+    buildpack: nodejs_buildpack
+  build-parameters:
+    builder: npm
+- name: DungNguyen-db-deployer
+  type: hdb
+  path: db
+  requires:
+  - name: DungNguyen-db
+  parameters:
+    buildpack: nodejs_buildpack
+- name: DungNguyen-destination-content
+  type: com.sap.application.content
+  requires:
+  - name: DungNguyen-destination-service
+    parameters:
+      content-target: true
+  - name: DungNguyen_html_repo_host
+    parameters:
+      service-key:
+        name: DungNguyen_html_repo_host-key
+  - name: DungNguyen-auth
+    parameters:
+      service-key:
+        name: DungNguyen-auth-key
+  parameters:
+    content:
+      instance:
+        destinations:
+        - Name: ManageAppRouter_DungNguyen_html_repo_host
+          ServiceInstanceName: DungNguyen-html5-app-host-service
+          ServiceKeyName: DungNguyen_html_repo_host-key
+          sap.cloud.service: ManageAppRouter
+        - Authentication: OAuth2UserTokenExchange
+          Name: ManageAppRouter_DungNguyen_auth
+          ServiceInstanceName: DungNguyen-auth
+          ServiceKeyName: DungNguyen-auth-key
+          sap.cloud.service: ManageAppRouter
+        existing_destinations_policy: ignore
+  build-parameters:
+    no-source: true
+- name: DungNguyen-app-content
+  type: com.sap.application.content
+  path: .
+  requires:
+  - name: DungNguyen_html_repo_host
+    parameters:
+      content-target: true
+  build-parameters:
+    build-result: resources
+    requires:
+    - artifacts:
+      - student.zip
+      name: student
+      target-path: resources/
+- name: student
+  type: html5
+  path: app/student
+  build-parameters:
+    build-result: dist
+    builder: custom
+    commands:
+    - npm install
+    - npm run build:cf
+    supported-platforms: []
+resources:
+- name: DungNguyen-auth
+  type: org.cloudfoundry.managed-service
+  parameters:
+    config:
+      tenant-mode: dedicated
+      xsappname: DungNguyen-${org}-${space}
+    path: ./xs-security.json
+    service: xsuaa
+    service-plan: application
+- name: DungNguyen-db
+  type: com.sap.xs.hdi-container
+  parameters:
+    service: hana
+    service-plan: hdi-shared
+- name: DungNguyen-destination-service
+  type: org.cloudfoundry.managed-service
+  parameters:
+    config:
+      HTML5Runtime_enabled: true
+      init_data:
+        instance:
+          destinations:
+          - Authentication: NoAuthentication
+            Name: ui5
+            ProxyType: Internet
+            Type: HTTP
+            URL: https://ui5.sap.com
+          - Authentication: NoAuthentication
+            HTML5.DynamicDestination: true
+            HTML5.ForwardAuthToken: true
+            Name: DungNguyen-srv-api
+            ProxyType: Internet
+            Type: HTTP
+            URL: ~{srv-api/srv-url}
+          existing_destinations_policy: update
+      version: 1.0.0
+    service: destination
+    service-name: DungNguyen-destination-service
+    service-plan: lite
+  requires:
+  - name: srv-api
+- name: DungNguyen_html_repo_host
+  type: org.cloudfoundry.managed-service
+  parameters:
+    service: html5-apps-repo
+    service-name: DungNguyen-html5-app-host-service
+    service-plan: app-host
 parameters:
+  deploy_mode: html5-repo
   enable-parallel-deployments: true
 build-parameters:
   before-all:
-    - builder: custom
-      commands:
-        - npx cds build --production
-modules:
-  - name: DungNguyen-srv
-    type: nodejs
-    path: gen/srv
-    parameters:
-      buildpack: nodejs_buildpack
-    build-parameters:
-      builder: npm
-    provides:
-      - name: srv-api # required by consumers of CAP services (e.g. approuter)
-        properties:
-          srv-url: ${default-url}
-    requires:
-      - name: DungNguyen-auth
-      - name: DungNguyen-db
-
-  - name: DungNguyen-db-deployer
-    type: hdb
-    path:  db
-    parameters:
-      buildpack: nodejs_buildpack
-    requires:
-      - name: DungNguyen-db
-
-resources:
-  - name: DungNguyen-auth
-    type: org.cloudfoundry.managed-service
-    parameters:
-      service: xsuaa
-      service-plan: application
-      path: ./xs-security.json
-      config:
-        xsappname: DungNguyen-${org}-${space}
-        tenant-mode: dedicated
-  - name: DungNguyen-db
-    type: com.sap.xs.hdi-container
-    parameters:
-      service: hana
-      service-plan: hdi-shared
+  - builder: custom
+    commands:
+    - npx cds build --production

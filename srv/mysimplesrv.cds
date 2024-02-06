@@ -1,12 +1,40 @@
 using myCompany.hr.lms from '../db/Students';
 
-service mysrvdemo {
+service mysrvdemo @(require: 'authenticated-user'){
     
-    @readonly entity GetStudent as projection on lms.Students;
-    @updateonly entity UpdateStudent as projection on lms.Students;
-    @readonly entity StudentsSRV as projection on lms.Students;
-    @insertonly entity InsertStudent as projection on lms.Students;
-    @deleteonly entity DeleteStudent as projection on lms.Students;
+    
+    entity GetStudent @(restrict: [
+    { grant: ['*'],
+      to: 'StudentAdmin' },
+      { grant: ['READ'],
+      to: 'StudentRead' }
+    ]) as projection on lms.Students;
+
+    
+    entity StudentsSRV @(restrict: [
+    { grant: ['*'],
+      to: 'StudentAdmin' },
+      { grant: ['READ'],
+      to: 'StudentRead' }
+    ]) as projection on lms.Students;
+
+   
+    entity UpdateStudent @(restrict: [
+    { grant: ['*'],
+      to: 'StudentAdmin' }
+    ]) as projection on lms.Students;
+
+   
+    entity InsertStudent @(restrict: [
+    { grant: ['*'],
+      to: 'StudentAdmin' }
+    ])as projection on lms.Students;
+
+   
+    entity DeleteStudent @(restrict: [
+    { grant: ['*'],
+      to: 'StudentAdmin' }
+    ])as projection on lms.Students;
 
     function myfoobar(msg:String) returns String;
 }
