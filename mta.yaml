@@ -22,6 +22,8 @@ modules:
   path: db
   requires:
   - name: DungNguyen-db
+    properties:
+      TARGET_CONTAINER: ~{hdi-container-name}
   parameters:
     buildpack: nodejs_buildpack
 - name: DungNguyen-destination-content
@@ -68,9 +70,23 @@ modules:
       - student.zip
       name: student
       target-path: resources/
+    - artifacts:
+      - student1student1.zip
+      name: student1student1
+      target-path: resources/
 - name: student
   type: html5
   path: app/student
+  build-parameters:
+    build-result: dist
+    builder: custom
+    commands:
+    - npm install
+    - npm run build:cf
+    supported-platforms: []
+- name: student1student1
+  type: html5
+  path: app/student1
   build-parameters:
     build-result: dist
     builder: custom
@@ -93,6 +109,8 @@ resources:
   parameters:
     service: hana
     service-plan: hdi-shared
+  properties:
+    hdi-container-name: ${service-name}
 - name: DungNguyen-destination-service
   type: org.cloudfoundry.managed-service
   parameters:
@@ -126,6 +144,12 @@ resources:
     service: html5-apps-repo
     service-name: DungNguyen-html5-app-host-service
     service-plan: app-host
+- name: cross-container-service-1
+  type: org.cloudfoundry.existing-service
+  parameters:
+    service-name: DungNguyen-hana
+  properties:
+    the-service-name: ${service-name}
 parameters:
   deploy_mode: html5-repo
   enable-parallel-deployments: true
